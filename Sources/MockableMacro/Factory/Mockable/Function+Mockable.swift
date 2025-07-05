@@ -12,7 +12,9 @@ import SwiftSyntax
 extension FunctionRequirement: Mockable {
     func implement(with modifiers: DeclModifierListSyntax) throws -> DeclSyntax {
         let decl = FunctionDeclSyntax(
-            attributes: syntax.attributes.removingAttributes(["concurrent", "MainActor"]).trimmed.with(\.trailingTrivia, .newline),
+            attributes: syntax.attributes
+                .removingAttributes(["concurrent", "MainActor"])
+                .trimmed.with(\.trailingTrivia, .newline),
             modifiers: declarationModifiers(extending: modifiers),
             funcKeyword: syntax.funcKeyword.trimmed,
             name: syntax.name.trimmed,
