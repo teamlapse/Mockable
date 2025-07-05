@@ -9,6 +9,7 @@ import MacroTesting
 import XCTest
 
 final class ActorConformanceTests: MockableMacroTestCase {
+    // Tests for actor conformance and attribute stripping
     func test_global_actor_conformance() {
         assertMacro {
           """
