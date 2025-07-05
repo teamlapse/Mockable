@@ -1,4 +1,4 @@
-THIS SHOULD BE A LINTER ERROR//
+//
 //  ActorConformanceTests.swift
 //  
 //
@@ -322,7 +322,7 @@ final class ActorConformanceTests: MockableMacroTestCase {
             """
         }
     }
-    
+
     func test_concurrent_attribute_stripping() {
         assertMacro {
           """
