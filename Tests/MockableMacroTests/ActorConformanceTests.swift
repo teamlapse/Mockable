@@ -1,6 +1,6 @@
 //
 //  ActorConformanceTests.swift
-//  
+//
 //
 //  Created by Kolos Foltanyi on 06/07/2024.
 //
@@ -330,7 +330,7 @@ final class ActorConformanceTests: MockableMacroTestCase {
           protocol Test {
               @concurrent
               func foo() -> Int
-              
+
               @concurrent
               func bar(value: String) throws -> String
           }
@@ -340,7 +340,7 @@ final class ActorConformanceTests: MockableMacroTestCase {
             protocol Test {
                 @concurrent
                 func foo() -> Int
-                
+
                 @concurrent
                 func bar(value: String) throws -> String
             }
@@ -369,7 +369,7 @@ final class ActorConformanceTests: MockableMacroTestCase {
                         mocker.policy = policy
                     }
                 }
-                
+
                 nonisolated func foo() -> Int {
                     let member: Member = .m1_foo
                     return mocker.mock(member) { producer in
@@ -377,7 +377,7 @@ final class ActorConformanceTests: MockableMacroTestCase {
                         return producer()
                     }
                 }
-                
+
                 nonisolated func bar(value: String) throws -> String {
                     let member: Member = .m2_bar(value: .value(value))
                     return try mocker.mockThrowing(member) { producer in
@@ -404,11 +404,11 @@ final class ActorConformanceTests: MockableMacroTestCase {
                     nonisolated init(mocker: Mocker) {
                         self.mocker = mocker
                     }
-                    
+
                     nonisolated func foo() -> Mockable.FunctionReturnBuilder<MockTest, ReturnBuilder, Int, () -> Int> {
                         .init(mocker, kind: .m1_foo)
                     }
-                    
+
                     nonisolated func bar(value: Parameter<String>) -> Mockable.ThrowingFunctionReturnBuilder<MockTest, ReturnBuilder, String, any Error, (String) throws -> String> {
                         .init(mocker, kind: .m2_bar(value: value))
                     }
@@ -418,11 +418,11 @@ final class ActorConformanceTests: MockableMacroTestCase {
                     nonisolated init(mocker: Mocker) {
                         self.mocker = mocker
                     }
-                    
+
                     nonisolated func foo() -> Mockable.FunctionActionBuilder<MockTest, ActionBuilder> {
                         .init(mocker, kind: .m1_foo)
                     }
-                    
+
                     nonisolated func bar(value: Parameter<String>) -> Mockable.FunctionActionBuilder<MockTest, ActionBuilder> {
                         .init(mocker, kind: .m2_bar(value: value))
                     }
@@ -432,11 +432,11 @@ final class ActorConformanceTests: MockableMacroTestCase {
                     nonisolated init(mocker: Mocker) {
                         self.mocker = mocker
                     }
-                    
+
                     nonisolated func foo() -> Mockable.FunctionVerifyBuilder<MockTest, VerifyBuilder> {
                         .init(mocker, kind: .m1_foo)
                     }
-                    
+
                     nonisolated func bar(value: Parameter<String>) -> Mockable.FunctionVerifyBuilder<MockTest, VerifyBuilder> {
                         .init(mocker, kind: .m2_bar(value: value))
                     }

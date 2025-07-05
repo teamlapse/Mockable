@@ -1,4 +1,4 @@
-name: pull-request-validation
+THIS SHOULD BE A LINTER ERRORname: pull-request-validation
 
 on:
   pull_request:
@@ -57,6 +57,33 @@ jobs:
       - name: Select Xcode 16 (Swift 6.0)
         run: |
           sudo xcode-select -s /Applications/Xcode_16.2.app
+          swift --version
+
+      - name: Run Tests
+        run: |
+          Scripts/lint.sh & Scripts/test.sh
+
+  test-macos15:
+    name: Build and Test on macOS 15
+    runs-on: macos-15
+    env:
+      MOCKABLE_LINT: true
+      MOCKABLE_TEST: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show available Xcode versions
+        run: |
+          ls -la /Applications | grep Xcode || true
+          
+      - name: Select latest Xcode
+        run: |
+          # List available Xcode versions and select the latest
+          LATEST_XCODE=$(ls -1 /Applications | grep -E "^Xcode_[0-9]+\.[0-9]+\.app$|^Xcode\.app$" | sort -V | tail -1)
+          echo "Latest Xcode found: $LATEST_XCODE"
+          sudo xcode-select -s /Applications/$LATEST_XCODE
+          xcodebuild -version
           swift --version
 
       - name: Run Tests

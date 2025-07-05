@@ -17,8 +17,8 @@ extension DeclModifierListSyntax {
 
     func firstIndex(of keyword: Keyword) -> SyntaxChildrenIndex? {
         firstIndex { modifier in
-            guard case .keyword(let k) = modifier.name.tokenKind else { return false }
-            return k == keyword
+            guard case .keyword(let modifierKeyword) = modifier.name.tokenKind else { return false }
+            return modifierKeyword == keyword
         }
     }
 
