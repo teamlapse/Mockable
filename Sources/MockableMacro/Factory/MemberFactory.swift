@@ -30,7 +30,13 @@ enum MemberFactory: Factory {
 extension MemberFactory {
     private static func defaultInit(_ requirements: Requirements) -> InitializerDeclSyntax {
         InitializerDeclSyntax(
-            modifiers: memberModifiers(requirements),
+            modifiers: {
+                // Actors cannot have nonisolated synchronous initializers
+                if requirements.isActor {
+                    return requirements.modifiers
+                }
+                return memberModifiers(requirements)
+            }(),
             signature: .init(parameterClause: defaultInitParameters),
             body: .init { CodeBlockItemSyntax(item: .expr(mockerAssignmentWithPolicy)) }
         )

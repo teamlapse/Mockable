@@ -137,8 +137,13 @@ extension BuilderFactory {
     }
     
     private static func initModifiers(_ requirements: Requirements) -> DeclModifierListSyntax {
-        // Add nonisolated for actors, global actors, or concurrent functions
-        if requirements.isActor || requirements.hasConcurrentFunctions {
+        // Actors cannot have nonisolated synchronous initializers
+        if requirements.isActor {
+            return requirements.modifiers
+        }
+        
+        // Add nonisolated for global actors or concurrent functions
+        if requirements.hasConcurrentFunctions {
             return DeclModifierListSyntax {
                 DeclModifierSyntax(name: .keyword(.nonisolated))
             }
