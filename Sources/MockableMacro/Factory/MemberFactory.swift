@@ -126,7 +126,32 @@ extension MemberFactory {
     }
 
     private static func memberModifiers(_ requirements: Requirements) -> DeclModifierListSyntax {
-        requirements.modifiers
+        var modifiers = requirements.modifiers
+        
+        // For actors or globally-isolated types, these properties must be nonisolated
+        // to satisfy the protocol requirements
+        let hasGlobalActor = requirements.syntax.attributes.contains { attribute in
+            guard case .attribute(let attr) = attribute else { return false }
+            // Check if this is a global actor attribute (e.g., @MainActor, @MyGlobalActor, etc.)
+            if let identifier = attr.attributeName.as(IdentifierTypeSyntax.self) {
+                let name = identifier.name.text
+                // Common global actors end with "Actor" but we should be more inclusive
+                return name.hasSuffix("Actor") || name == "MainActor"
+            }
+            return false
+        }
+        
+        if requirements.isActor || hasGlobalActor {
+            // Add nonisolated if not already present
+            let hasNonisolated = modifiers.contains { modifier in
+                modifier.name.tokenKind == .keyword(.nonisolated)
+            }
+            if !hasNonisolated {
+                modifiers.append(DeclModifierSyntax(name: .keyword(.nonisolated)))
+            }
+        }
+        
+        return modifiers
     }
 
     private static var scopesParameter: FunctionParameterSyntax {

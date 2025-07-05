@@ -21,6 +21,7 @@ extension AttributeListSyntax {
             return !names.contains(attributeName ?? "")
         }
 
-        return AttributeListSyntax(filtered)
+        // Return the filtered array directly without using the deprecated init
+        return filtered
     }
 }
