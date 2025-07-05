@@ -10,6 +10,7 @@ import XCTest
 
 final class ActorConformanceTests: MockableMacroTestCase {
     // Tests for actor conformance and attribute stripping
+    // Updated for Swift 6.2 compatibility
     func test_global_actor_conformance() {
         assertMacro {
           """
