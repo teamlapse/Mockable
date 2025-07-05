@@ -16,7 +16,9 @@ extension FunctionRequirement: Buildable {
         using mockType: IdentifierTypeSyntax
     ) throws -> DeclSyntax {
         let decl = FunctionDeclSyntax(
-            attributes: syntax.attributes.trimmed.with(\.trailingTrivia, .newline),
+            attributes: syntax.attributes
+                .removingAttributes(["concurrent", "MainActor"])
+                .trimmed.with(\.trailingTrivia, .newline),
             modifiers: modifiers,
             name: syntax.name.trimmed,
             genericParameterClause: genericParameterClause(for: kind),

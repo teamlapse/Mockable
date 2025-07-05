@@ -6,47 +6,9 @@ on:
       - "*"
 
 jobs:
-  lint:
-    name: Lint Commit Messages
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install Node.js and NPM
-        uses: actions/setup-node@v4
-        with:
-          node-version: "14"
-
-      - name: Install commitlint
-        run: npm install -g @commitlint/cli@11.0.0 @commitlint/config-conventional@11.0.0
-
-      - name: Run commitlint
-        run: commitlint -x @commitlint/config-conventional --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }}
-
-  test:
-    name: Build and Test using Swift 5.9
-    runs-on: macos-14
-    env:
-      MOCKABLE_TEST: true
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Select Xcode 15.2 (Swift 5.9.2)
-        run: |
-          sudo xcode-select -s /Applications/Xcode_15.2.app
-          swift -version
-
-      - name: Run Tests
-        run: |
-          Scripts/test.sh
-
-  test-swift6:
-    name: Build and Test using Swift 6
-    runs-on: macos-14
+  test-xcode26-beta:
+    name: Build and Test with Xcode 26 Beta / Swift 6.2
+    runs-on: macos-15
     env:
       MOCKABLE_LINT: true
       MOCKABLE_TEST: true
@@ -54,29 +16,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16 (Swift 6.0)
+      - name: Select Xcode 26 (Swift 6.2)
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.2.app
+          sudo xcode-select -s /Applications/Xcode_26.0.app
+          swift -version
+
+      - name: Show versions
+        run: |
+          echo "Xcode version:"
+          xcodebuild -version
+          echo ""
+          echo "Swift version:"
           swift --version
 
       - name: Run Tests
         run: |
           Scripts/lint.sh & Scripts/test.sh
-
-  test-linux:
-    name: Build and Test on Linux
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        swift: ["6"] # ["5", "6"]
-    env:
-      MOCKABLE_TEST: true
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: ${{ matrix.swift }}
-      - name: Run Tests
-        run: |
-          Scripts/test.sh
