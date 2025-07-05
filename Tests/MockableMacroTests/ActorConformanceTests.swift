@@ -321,4 +321,128 @@ final class ActorConformanceTests: MockableMacroTestCase {
             """
         }
     }
+    
+    func test_concurrent_attribute_stripping() {
+        assertMacro {
+          """
+          @Mockable
+          protocol Test {
+              @concurrent
+              func foo() -> Int
+              
+              @concurrent
+              func bar(value: String) throws -> String
+          }
+          """
+        } expansion: {
+            """
+            protocol Test {
+                @concurrent
+                func foo() -> Int
+                
+                @concurrent
+                func bar(value: String) throws -> String
+            }
+
+            #if MOCKING
+            final class MockTest: Test, Mockable.MockableService {
+                typealias Mocker = Mockable.Mocker<MockTest>
+                private let mocker = Mocker()
+                @available(*, deprecated, message: "Use given(_ service:) instead. ")
+                nonisolated var _given: ReturnBuilder {
+                    .init(mocker: mocker)
+                }
+                @available(*, deprecated, message: "Use when(_ service:) instead. ")
+                nonisolated var _when: ActionBuilder {
+                    .init(mocker: mocker)
+                }
+                @available(*, deprecated, message: "Use verify(_ service:) instead. ")
+                nonisolated var _verify: VerifyBuilder {
+                    .init(mocker: mocker)
+                }
+                nonisolated func reset(_ scopes: Set<Mockable.MockerScope> = .all) {
+                    mocker.reset(scopes: scopes)
+                }
+                nonisolated init(policy: Mockable.MockerPolicy? = nil) {
+                    if let policy {
+                        mocker.policy = policy
+                    }
+                }
+                
+                nonisolated func foo() -> Int {
+                    let member: Member = .m1_foo
+                    return mocker.mock(member) { producer in
+                        let producer = try cast(producer) as () -> Int
+                        return producer()
+                    }
+                }
+                
+                nonisolated func bar(value: String) throws -> String {
+                    let member: Member = .m2_bar(value: .value(value))
+                    return try mocker.mockThrowing(member) { producer in
+                        let producer = try cast(producer) as (String) throws -> String
+                        return try producer(value)
+                    }
+                }
+                enum Member: Mockable.Matchable, Mockable.CaseIdentifiable, Swift.Sendable {
+                    case m1_foo
+                    case m2_bar(value: Parameter<String>)
+                    func match(_ other: Member) -> Bool {
+                        switch (self, other) {
+                        case (.m1_foo, .m1_foo):
+                            return true
+                        case (.m2_bar(value: let leftValue), .m2_bar(value: let rightValue)):
+                            return leftValue.match(rightValue)
+                        default:
+                            return false
+                        }
+                    }
+                }
+                struct ReturnBuilder: Mockable.Builder {
+                    private let mocker: Mocker
+                    nonisolated init(mocker: Mocker) {
+                        self.mocker = mocker
+                    }
+                    
+                    nonisolated func foo() -> Mockable.FunctionReturnBuilder<MockTest, ReturnBuilder, Int, () -> Int> {
+                        .init(mocker, kind: .m1_foo)
+                    }
+                    
+                    nonisolated func bar(value: Parameter<String>) -> Mockable.ThrowingFunctionReturnBuilder<MockTest, ReturnBuilder, String, any Error, (String) throws -> String> {
+                        .init(mocker, kind: .m2_bar(value: value))
+                    }
+                }
+                struct ActionBuilder: Mockable.Builder {
+                    private let mocker: Mocker
+                    nonisolated init(mocker: Mocker) {
+                        self.mocker = mocker
+                    }
+                    
+                    nonisolated func foo() -> Mockable.FunctionActionBuilder<MockTest, ActionBuilder> {
+                        .init(mocker, kind: .m1_foo)
+                    }
+                    
+                    nonisolated func bar(value: Parameter<String>) -> Mockable.FunctionActionBuilder<MockTest, ActionBuilder> {
+                        .init(mocker, kind: .m2_bar(value: value))
+                    }
+                }
+                struct VerifyBuilder: Mockable.Builder {
+                    private let mocker: Mocker
+                    nonisolated init(mocker: Mocker) {
+                        self.mocker = mocker
+                    }
+                    
+                    nonisolated func foo() -> Mockable.FunctionVerifyBuilder<MockTest, VerifyBuilder> {
+                        .init(mocker, kind: .m1_foo)
+                    }
+                    
+                    nonisolated func bar(value: Parameter<String>) -> Mockable.FunctionVerifyBuilder<MockTest, VerifyBuilder> {
+                        .init(mocker, kind: .m2_bar(value: value))
+                    }
+                }
+            }
+            #endif
+            """
+        }
+    }
 }
