@@ -30,7 +30,7 @@ enum MemberFactory: Factory {
 extension MemberFactory {
     private static func defaultInit(_ requirements: Requirements) -> InitializerDeclSyntax {
         InitializerDeclSyntax(
-            modifiers: requirements.isActor ? requirements.modifiers : memberModifiers(requirements),
+            modifiers: memberModifiers(requirements),
             signature: .init(parameterClause: defaultInitParameters),
             body: .init { CodeBlockItemSyntax(item: .expr(mockerAssignmentWithPolicy)) }
         )
@@ -126,32 +126,40 @@ extension MemberFactory {
     }
 
     private static func memberModifiers(_ requirements: Requirements) -> DeclModifierListSyntax {
-        var modifiers = requirements.modifiers
+        // Check if the mock class will be actor-isolated
+        // This happens when:
+        // 1. The protocol inherits from Actor (isActor = true)
+        // 2. The protocol has @MainActor or other global actor attributes
+        // 3. The protocol has @concurrent functions (requires nonisolated for thread safety)
         
-        // For actors or globally-isolated types, these properties must be nonisolated
-        // to satisfy the protocol requirements
+        if requirements.isActor || requirements.hasConcurrentFunctions {
+            // For actor types or protocols with concurrent functions, add nonisolated
+            return DeclModifierListSyntax {
+                DeclModifierSyntax(name: .keyword(.nonisolated))
+            }
+        }
+        
+        // Check if the protocol has global actor attributes that will be copied to the mock
         let hasGlobalActor = requirements.syntax.attributes.contains { attribute in
             guard case .attribute(let attr) = attribute else { return false }
-            // Check if this is a global actor attribute (e.g., @MainActor, @MyGlobalActor, etc.)
             if let identifier = attr.attributeName.as(IdentifierTypeSyntax.self) {
                 let name = identifier.name.text
-                // Common global actors end with "Actor" but we should be more inclusive
-                return name.hasSuffix("Actor") || name == "MainActor"
+                // Common global actors end with "Actor"
+                return name == "MainActor" || name.hasSuffix("Actor")
             }
             return false
         }
         
-        if requirements.isActor || hasGlobalActor {
-            // Add nonisolated if not already present
-            let hasNonisolated = modifiers.contains { modifier in
-                modifier.name.tokenKind == .keyword(.nonisolated)
-            }
-            if !hasNonisolated {
-                modifiers.append(DeclModifierSyntax(name: .keyword(.nonisolated)))
-            }
+        if hasGlobalActor {
+            // For globally-isolated types, add nonisolated
+            // but preserve other modifiers like public/internal
+            var modifiers = requirements.modifiers
+            modifiers.append(DeclModifierSyntax(name: .keyword(.nonisolated)))
+            return modifiers
         }
         
-        return modifiers
+        // For regular protocols, just use the original modifiers
+        return requirements.modifiers
     }
 
     private static var scopesParameter: FunctionParameterSyntax {

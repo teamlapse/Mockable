@@ -14,6 +14,7 @@ struct Requirements {
     let syntax: ProtocolDeclSyntax
     let modifiers: DeclModifierListSyntax
     let isActor: Bool
+    let hasConcurrentFunctions: Bool
     let containsGenericExistentials: Bool
     var functions = [FunctionRequirement]()
     var variables = [VariableRequirement]()
@@ -34,6 +35,7 @@ struct Requirements {
         self.initializers = Self.initInitializers(members)
         self.variables = try Self.initVariables(members)
         self.functions = try Self.initFunctions(members, startIndex: variables.count)
+        self.hasConcurrentFunctions = Self.initHasConcurrentFunctions(functions)
         self.containsGenericExistentials = try Self.initContainsGenericExistentials(variables, functions)
     }
 }
@@ -107,6 +109,12 @@ extension Requirements {
             .compactMap { $0.decl.as(InitializerDeclSyntax.self) }
             .enumerated()
             .map { InitializerRequirement(index: $0, syntax: $1) }
+    }
+
+    private static func initHasConcurrentFunctions(_ functions: [FunctionRequirement]) -> Bool {
+        functions.contains { function in
+            function.syntax.attributes.contains("concurrent")
+        }
     }
 
     private static func initContainsGenericExistentials(

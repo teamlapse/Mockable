@@ -53,7 +53,7 @@ extension BuilderFactory {
                 MemberBlockItemSyntax(
                     decl: try variable.builder(
                         of: kind,
-                        with: requirements.modifiers,
+                        with: builderMemberModifiers(requirements),
                         using: requirements.syntax.mockType
                     )
                 )
@@ -63,7 +63,7 @@ extension BuilderFactory {
                     decl: try function.builder(
                         of: kind,
                         with: {
-                            var modifiers = requirements.modifiers
+                            var modifiers = builderMemberModifiers(requirements)
                             if function.syntax.attributes.contains("MainActor") {
                                 modifiers.remove(keyword: .nonisolated)
                             }
@@ -75,6 +75,33 @@ extension BuilderFactory {
                 )
             }
         }
+    }
+    
+    private static func builderMemberModifiers(_ requirements: Requirements) -> DeclModifierListSyntax {
+        // For actors, global actors, or concurrent functions, make all builder members nonisolated
+        if requirements.isActor || requirements.hasConcurrentFunctions {
+            return DeclModifierListSyntax {
+                DeclModifierSyntax(name: .keyword(.nonisolated))
+            }
+        }
+        
+        // Check for global actor
+        let hasGlobalActor = requirements.syntax.attributes.contains { attribute in
+            guard case .attribute(let attr) = attribute else { return false }
+            if let identifier = attr.attributeName.as(IdentifierTypeSyntax.self) {
+                let name = identifier.name.text
+                return name == "MainActor" || name.hasSuffix("Actor")
+            }
+            return false
+        }
+        
+        if hasGlobalActor {
+            var modifiers = requirements.modifiers
+            modifiers.append(DeclModifierSyntax(name: .keyword(.nonisolated)))
+            return modifiers
+        }
+        
+        return requirements.modifiers
     }
 
     private static func mockerDeclaration(_ requirements: Requirements) -> VariableDeclSyntax {
@@ -95,7 +122,7 @@ extension BuilderFactory {
         _ requirements: Requirements
     ) -> InitializerDeclSyntax {
         InitializerDeclSyntax(
-            modifiers: requirements.modifiers,
+            modifiers: initModifiers(requirements),
             signature: initializerSignature(kind, requirements)
         ) {
             InfixOperatorExprSyntax(
@@ -107,6 +134,33 @@ extension BuilderFactory {
                 rightOperand: DeclReferenceExprSyntax(baseName: NS.mocker)
             )
         }
+    }
+    
+    private static func initModifiers(_ requirements: Requirements) -> DeclModifierListSyntax {
+        // Add nonisolated for actors, global actors, or concurrent functions
+        if requirements.isActor || requirements.hasConcurrentFunctions {
+            return DeclModifierListSyntax {
+                DeclModifierSyntax(name: .keyword(.nonisolated))
+            }
+        }
+        
+        // Check for global actor
+        let hasGlobalActor = requirements.syntax.attributes.contains { attribute in
+            guard case .attribute(let attr) = attribute else { return false }
+            if let identifier = attr.attributeName.as(IdentifierTypeSyntax.self) {
+                let name = identifier.name.text
+                return name == "MainActor" || name.hasSuffix("Actor")
+            }
+            return false
+        }
+        
+        if hasGlobalActor {
+            var modifiers = requirements.modifiers
+            modifiers.append(DeclModifierSyntax(name: .keyword(.nonisolated)))
+            return modifiers
+        }
+        
+        return requirements.modifiers
     }
 
     private static func initializerSignature(

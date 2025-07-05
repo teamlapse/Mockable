@@ -40,6 +40,23 @@ extension ConformanceFactory {
                     decl: try function.implement(
                         with: {
                             var modifiers = requirements.modifiers
+                            
+                            // If the protocol has concurrent functions, all functions should be nonisolated
+                            if requirements.hasConcurrentFunctions {
+                                // Add nonisolated if not already present
+                                if !modifiers.contains(where: { $0.name.tokenKind == .keyword(.nonisolated) }) {
+                                    modifiers.append(DeclModifierSyntax(name: .keyword(.nonisolated)))
+                                }
+                            }
+                            
+                            // Individual function has @concurrent, make it nonisolated
+                            if function.syntax.attributes.contains("concurrent") {
+                                if !modifiers.contains(where: { $0.name.tokenKind == .keyword(.nonisolated) }) {
+                                    modifiers.append(DeclModifierSyntax(name: .keyword(.nonisolated)))
+                                }
+                            }
+                            
+                            // Remove nonisolated for @MainActor functions
                             if function.syntax.attributes.contains("MainActor") {
                                 modifiers.remove(keyword: .nonisolated)
                             }
